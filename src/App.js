@@ -13,12 +13,7 @@ function Square({ value, onSquareClick }) {
 }
 
 // Board component represents the entire Tic-Tac-Toe board
-export default function Board() {
-  // State to store the current state of the squares (null, 'X', or 'O')
-  const [squares, setSquares] = useState(Array(9).fill(null));
-  
-  // State to track whether it's X's turn (true) or O's turn (false)
-  const [xIsNext, setXIsNext] = useState(true);
+function Board({ xIsNext, squares, onPlay }) {
 
   // Function to handle the click event on a square
   function handleClick(i) {
@@ -33,11 +28,8 @@ export default function Board() {
     // Assign 'X' or 'O' to the clicked square based on the current player
     xIsNext ? (nextSquares[i] = 'X') : (nextSquares[i] = 'O');
     
-    // Update the squares state with the new move
-    setSquares(nextSquares);
-    
-    // Switch the turn to the next player
-    setXIsNext(!xIsNext);
+    // Call the onPlay function, passing the updated squares array to the parent component
+    onPlay(nextSquares);
   }
 
   // Calculate the winner of the game (if there is one)
@@ -69,6 +61,63 @@ export default function Board() {
         <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
       </div>
     </>
+  );
+}
+
+export default function Game() {
+
+  // State to store the history of the board's states (each move creates a new state)
+  const [history, setHistory] = useState([Array(9).fill(null)]);
+
+  // State to track the current move index
+  const [currentMove, setCurrentMove] = useState(0);
+
+  // The current squares to be displayed on the board (based on the move index)
+  const currentSquares = history[currentMove];
+
+  // Determine the next player based on the current move (X if even, O if odd)
+  const xIsNext = currentMove % 2 === 0;
+
+   // Function to handle a new move (updates history and current move)
+  function handlePlay(nextSquares) {
+    // Create a new history array, discarding any "future" history if we are jumping back
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+
+    // Update the history state with the new history and set the current move to the latest
+    setHistory(nextHistory);
+    setCurrentMove(nextHistory.length - 1);
+  };
+
+  // Function to jump to a specific move in the game history
+  function jumpTo(nextMove) {
+    setCurrentMove(nextMove);
+  }
+
+  const moves = history.map((squares, move) => {
+    let description;
+
+    // Create a description for each move
+    move > 0 ? description = `Got to move #${move}` : description = `Go to game start`;
+
+    // Return a list item with a button to jump to the specific move
+    return (
+      <li key={move}>
+        <button onClick={() => jumpTo(move)}>{description}</button>
+      </li>
+    );
+  });
+
+  return (
+    <div className="game">
+      <div className="game-board">
+        {/* Pass the necessary props to the Board component */}
+        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay}/>
+      </div>
+      <div className="game-info">
+        {/* Display the list of moves */}
+        <ol>{moves}</ol>
+      </div>
+    </div>
   );
 }
 
